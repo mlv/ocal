@@ -73,16 +73,17 @@ pass that + jdcal.MJD_0.
         "add (or subtract if negative) ndays to the date"
         pass
 
-    def next_dow(self, dow, n=1):
-        """advance the date to the nth (default to 1) next given day of week (dow. 0==Sunday)
+    def next_dow(self, dow, n=0):
+        """advance the date to the next given day of week (dow. 0==Sunday)
+Increments day until dow is given. Then adds 7*n days to it.
 eg. to find election day (first Tuesday after the first Monday):
 d=ocal.gregorian(year, 11, 1)
-d.next_dow(1, 1)
-d.next_dow(2, 1)
-It does not advance if the current day is already there. So if d.dow is 1, d.next_dow(1, 1) does nothing.
+d.next_dow(1, 0)
+d.next_dow(2, 0)
+It does not advance if the current day is already there. So if d.dow is 1, d.next_dow(1, 0) does nothing.
 For Thanksgiving, you would do:
 d=ocal.gregorian(year, 11, 1)
-d.next_dow(4, 4) # 4th Thursday
+d.next_dow(4, 3) # 4th Thursday
 """
         pass
 
