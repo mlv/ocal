@@ -1,20 +1,20 @@
 import unittest
 
-from ocal import ocal
+import ocal
 
 class ocaltest(unittest.TestCase):
     def test_ocal_init(self):
-        o=ocal(year=1995, month=9, day=27, calendar=ocal.gregorian)
+        o=ocal.ocal(year=1995, month=9, day=27, calendar=ocal.ocal.gregorian)
         self.assertEqual(o.date, 49987, "init with gregorian didn't return correct mjd date")
 
-        o=ocal(year=1995, month=9, day=27)
+        o=ocal.ocal(year=1995, month=9, day=27)
         self.assertEqual(o.date, 49987, "init default:gregorian didn't return correct mjd date")
 
-        o=ocal(year=1995, month=9, day=14, calendar=ocal.julian)
+        o=ocal.ocal(year=1995, month=9, day=14, calendar=ocal.ocal.julian)
         self.assertEqual(o.date, 49987, "init with julian didn't return correct mjd date")
 
         try:
-            o=ocal(year=1995, month=9, day=14, calendar=47)
+            o=ocal.ocal(year=1995, month=9, day=14, calendar=47)
         except ValueError as e:
             self.assertEqual(e.args[0], "Unknown calendar:47", "Invalid error")
         except BaseException as e:
@@ -22,11 +22,11 @@ class ocaltest(unittest.TestCase):
         else:
             self.fail("init with invalid calendar failed to raise exception")
 
-        o=ocal(date=49987)
+        o=ocal.ocal(date=49987)
         self.assertEqual(o.date, 49987, "init with date didn't return itself!")
 
         try:
-            o=ocal(month=9, day=27, calendar=ocal.gregorian)
+            o=ocal.ocal(month=9, day=27, calendar=ocal.ocal.gregorian)
         except KeyError:
             pass
         except e:
@@ -35,7 +35,7 @@ class ocaltest(unittest.TestCase):
             self.fail("Missing exception when year missing")
 
         try:
-            o=ocal(year=1995, day=27, calendar=ocal.gregorian)
+            o=ocal.ocal(year=1995, day=27, calendar=ocal.ocal.gregorian)
         except KeyError:
             pass
         except e:
@@ -44,7 +44,7 @@ class ocaltest(unittest.TestCase):
             self.fail("Missing exception when month missing")
 
         try:
-            o=ocal(year=1995, month=9, calendar=ocal.gregorian)
+            o=ocal.ocal(year=1995, month=9, calendar=ocal.ocal.gregorian)
         except KeyError:
             pass
         except e:
@@ -53,37 +53,37 @@ class ocaltest(unittest.TestCase):
             self.fail("Missing exception when day missing")
 
     def test_ocal_gregorian(self):
-        o=ocal.gregorian(1995, 9, 27)
+        o=ocal.ocal.gregorian(1995, 9, 27)
         self.assertEqual(o.date, 49987, "gregorian init didn't return correct mjd date")
 
     def test_ocal_julian(self):
-        o=ocal.julian(1995, 9, 14)
+        o=ocal.ocal.julian(1995, 9, 14)
         self.assertEqual(o.date, 49987, "julian init didn't return correct mjd date")
 
     def test_ocal_mjdate(self):
-        o=ocal.mj_date(49987)
+        o=ocal.ocal.mj_date(49987)
         self.assertEqual(o.date, 49987, "mj_date init didn't return correct mjd date")
 
     def test_ocal_get_date(self):
-        o=ocal.mj_date(49987)
+        o=ocal.ocal.mj_date(49987)
         self.assertEqual(o.get_date(), 49987, "get_date didn't return correct mjd date")
 
     def test_ocal_get_ymd_g(self):
-        o=ocal.mj_date(49987)
+        o=ocal.ocal.mj_date(49987)
         self.assertEqual(o.get_ymd_g(), (1995, 9, 27), "get_ymd_g() didn't return expected year,month,day")
 
     def test_ocal_get_ymd_j(self):
-        o=ocal.mj_date(49987)
+        o=ocal.ocal.mj_date(49987)
         self.assertEqual(o.get_ymd_j(), (1995, 9, 14), "get_ymd_j() didn't return expected year,month,day")
 
     def test_ocal_get_dow(self):
-        o=ocal.mj_date(49987)
+        o=ocal.ocal.mj_date(49987)
         self.assertEqual(o.get_dow(), 3, "get_dow didn't return expected day of week")
 
 
     # modifying methods
     def test_ocal_add_days(self):
-        o=ocal.mj_date(100)
+        o=ocal.ocal.mj_date(100)
         self.assertEqual(o.get_date(), 100, "add_days test didn't start with 100")
         o.add_days(10)
         self.assertEqual(o.get_date(), 110, "add_days failed adding 10")
@@ -91,15 +91,15 @@ class ocaltest(unittest.TestCase):
         self.assertEqual(o.get_date(), -90, "add_days failed subtracting 200")
 
     def test_ocal_next_dow(self):
-        o=ocal.mj_date(49987)
+        o=ocal.ocal.mj_date(49987)
         o.next_dow(0)
         self.assertEqual(o.get_ymd_g(), (1995, 10, 1), "first sunday after 9/27/1995 failed")
 
-        o=ocal.gregorian(2014, 6, 1)
+        o=ocal.ocal.gregorian(2014, 6, 1)
         o.next_dow(0, 1) # advance to Sunday, but 6/1/2014 IS a Sunday
         self.assertEqual(o.get_ymd_g(), (2014, 6, 1), "Advancing to same day failed")
 
-        o=ocal.gregorian(2014, 6, 1)
+        o=ocal.ocal.gregorian(2014, 6, 1)
         o.next_dow(0) # advance to Sunday, but 6/1/2014 IS a Sunday
         self.assertEqual(o.get_ymd_g(), (2014, 6, 1), "Advancing to same day failed (default 1)")
 
@@ -120,6 +120,21 @@ class ocaltest(unittest.TestCase):
             self.fail("Unexpected exception thrown:", e)
         else:
             self.fail("No exception thrown. Expected ValueError")
+
+class ocalpascha(unittest.TestCase):
+    def test_pascha(self):
+        ydates=(
+            (2014, 56767),
+            (2001, 52014),
+            (2000, 51664),
+            (1960, 37041),
+            (1958, 36306),
+            (1977, 43243)
+        )
+        for yd in ydates:
+            o=ocal.pascha(yd[0])
+            self.assertEqual(o.get_dow(), 0, "Pascha for year {} not on Sunday!")
+            self.assertEqual(o.get_date(), yd[1], "Pascha failed for year {}".format(yd[0]))
 
 if __name__ == "__main__":
     unittest.main()

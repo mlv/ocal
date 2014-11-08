@@ -120,3 +120,16 @@ n==0 raises a ValueError
             self.date -= 1
             self.date = self.date - (self.get_dow()-dow) % 7
             self.date += (n+1)*7
+
+def pascha(year):
+    pdate=ocal.julian(year, 3, 21)
+    offset = ((year-1) % 19) + 1
+    offset = (offset * 19) + 15
+    offset = offset % 30
+    #print("Offset is {}".format(offset))
+    pdate.add_days(offset+1)
+    #print("pdate full moon on day:{}".format(pdate.get_dow()))
+    
+    pdate.next_dow(0)
+    #print("pdate:{}".format(pdate.get_ymd_g()))
+    return pdate
