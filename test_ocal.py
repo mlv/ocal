@@ -56,5 +56,31 @@ class ocaltest(unittest.TestCase):
         o.next_dow(0)
         self.assertEqual(o.get_ymd_g(), (1995, 10, 1), "first sunday after 9/27/1995 failed")
 
+        o=ocal.ocal.gregorian(2014, 6, 1)
+        o.next_dow(0, 1) # advance to Sunday, but 6/1/2014 IS a Sunday
+        self.assertEqual(o.get_ymd_g(), (2014, 6, 1), "Advancing to same day failed")
+
+        o=ocal.ocal.gregorian(2014, 6, 1)
+        o.next_dow(0) # advance to Sunday, but 6/1/2014 IS a Sunday
+        self.assertEqual(o.get_ymd_g(), (2014, 6, 1), "Advancing to same day failed (default 1)")
+
+        o.next_dow(0, -1) # advance to last Sunday in May
+        self.assertEqual(o.get_ymd_g(), (2014, 5, 25), "Advancing to last day in prev month failed")
+
+        o.next_dow(4, -2) # advance back a couple weeks
+        self.assertEqual(o.get_ymd_g(), (2014, 5, 15), "Advancing back 2 weeks failed")
+
+        o.next_dow(4, 2) # advance forward a couple weeks
+        self.assertEqual(o.get_ymd_g(), (2014, 5, 22), "Advancing forward 2 (really 1 because same day) weeks failed")
+
+        try:
+            o.next_dow(3, 0) # 0: ValueError
+        except ValueError:
+            pass
+        except e:
+            self.fail("Unexpected exception thrown:", e)
+        else:
+            self.fail("No exception thrown. Expected ValueError")
+
 if __name__ == "__main__":
     unittest.main()

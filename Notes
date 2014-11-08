@@ -1,0 +1,61 @@
+Notes
+
+This file serves as a place for me to type. It has limited use as documentation except that it serves to 
+document how I made some (by no means all) decisions. 
+
+What do I do with next_dow(0) if today is already a Sunday? Two options. Advance a week. Or just stay today. 
+
+Procon time:
+
+Advance: this is ultimately a tool for computing calendar dates in the Orthodox Church. Pascha, for example, has, 
+as part of it's algorithm, the first Sunday *after* the full moon (extreme simplification here). So I compute that, 
+then next_dow(0). Boom. Done. 
+
+Stay: in every other case, that's not what's expected. To get 1st Monday in November you do
+
+d=ocal.ymd_g(year, 11,1)
+d.next_dow(1)
+
+So if 11/1 is already Monday you're set. In the other method I'd have to start with 10/31 and then next_dow would 
+advance to Monday. That's counter-intuitive. 
+
+And in the case of Pascha, I could always advance N days to the full moon +1 then next_dow(0). Either way if I'm 
+faced with the exception I'll have to add or subtract 1. But in this one case I'm already adding. 
+
+You see how this file works? I type in my question and find the answer in the words. 
+
+Next_dow takes 2 args. 2nd defaults to 0 and is "which next dow?" So if I... 
+
+Okay, this is another way this file helps. When I start to write something I see a better way to do it. 
+
+I wanted to consider the case of "second Tuesday in November". The way this makes sense (and the way I'd like to 
+do it) is next_dow(2, 2) (where the first 2 is Tuesday and the second is, well, "second"). Given the aforementioned 
+algorithm, 1 would be correct ("one week after the first Tuesday in November") but that really doesn't make sense. 
+It doesn't sing. 
+
+I'm faced with a paradox (the root of much wisdom and humor ("Paradox on the golf course and one says to 
+the other...")). What makes sense is to have the default be 1 meaning "next" and -1 means "previous" but 
+then what would 0 mean? 
+
+I'll have to think about that. 
+
+I'm actually happy with 1:next,-1:previous. Only problem is, what does 0 mean? Oh wait. I just said that...
+
+==========
+Fri Nov 07 22:38:26 EST 2014
+
+I have a problem with this, but here's an idea:
+
+1..n: go back to previous week, then advance n*7 days. So 1 is next week (or today).
+-n..-1: go to next (or today), then subtract n*7 days.
+0: raise ValueError.
+
+So, to find the last Thursday in M, do year/(M+1)/1 and go next_dow(4, -1). This is better than year/M/<last day in M>
+for the simple reason that it's not always clear-cut what the <last day in M> is. By the same token, starting with 11/1/year 
+and doing next_dow(1,1) should yield the first Monday, even if it's the 1st.
+
+So to be clear: if n>0, advance includes today (so 1 means today if today is already dow).
+If n<0, advance does not include today (so -1 means 7 days ago if today is already dow).
+And 0 is ValueError.
+
+
