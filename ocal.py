@@ -12,8 +12,8 @@ the goal is whatever methods are needed to "give me the sunday after the Nth day
 March 21st of this year".
 
 To that end, it includes methods for initializing dates (using both Gregorian and Julian 
-dates), adding and subtracting days, getting the next or previous <day of week>. Finally, 
-it can return a date as a Gregorian or Julian year,month,day tuple or as a formatted 
+calendar dates), adding and subtracting days, getting the next or previous <day of week>. 
+Finally, it can return a date as a Gregorian or Julian year,month,day tuple or as a formatted 
 string (either the Gregorian, Julian, or a combination of the two).
 
 Care must be taken to avoid confusing the Julian calendar with Julian dates. The Julian 

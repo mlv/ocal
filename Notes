@@ -1,5 +1,6 @@
-Notes
+* Notes
 
+** Note 1
 This file serves as a place for me to type. It has limited use as documentation except that it serves to 
 document how I made some (by no means all) decisions. 
 
@@ -41,8 +42,7 @@ I'll have to think about that.
 
 I'm actually happy with 1:next,-1:previous. Only problem is, what does 0 mean? Oh wait. I just said that...
 
-==========
-Fri Nov 07 22:38:26 EST 2014
+** Fri Nov 07 22:38:26 EST 2014
 
 I have a problem with this, but here's an idea:
 
@@ -58,4 +58,53 @@ So to be clear: if n>0, advance includes today (so 1 means today if today is alr
 If n<0, advance does not include today (so -1 means 7 days ago if today is already dow).
 And 0 is ValueError.
 
+** Sat Nov 08 23:03:57 EST 2014
+
+Next step?
+
+Got ocal, and can do things with dates. What's next?
+
+The basics for daily reading: Given a day (today?) find if it matches a hierarchy of criteria from feasts, movables, etc.
+
+Start with movables:
+	  Find pascha this year. Subtract 10 weeks (I think). If that's in the future, repeat with last year.
+	  Use today - that to index a list of movables.
+
+For feasts, give a list of feasts by month, compute the date for each this year (or prev/next if Dec or Jan are involved), 
+and see if any match today.
+
+What should I call the file? ocal is a general library, that I don't want to use. The original program was called "caltime", so 
+I guess I could use that.
+
+** Sun Nov 09 22:22:25 EST 2014
+
+How much should go in ocal? Right now it's just the ocal class and pascha function (that returns an ocal). I have other function 
+that I'd like to include somewhere. Namely daily reading movable readings (relative to Pascha), feasts, etc. 
+
+So do they go in another file, or this one? First thing is I want the final file to be as simple as possible: Just "get today's 
+date" then "pass that to a function or two or three until I find a valid reading". That way the tests can stay with functions.
+
+So right now ocal has a class and a function. I can write a couple higher level functions that, given a date (ocal of course), 
+return an epistle/gospel/feast name. 
+
+Just a thought: function that given a time value (standard UNIX time) return an ocal. Maybe just amend the init with a time= parameter.
+
+So I need to do some research on movable readings and fixed feasts. I'd like them to be separate functions:
+
+res = feast(d)
+if not res:
+    res = movable(d)
+
+movable will be not just movable[d.date - (pascha()-10 weeks)] but also handle lucan jumps and after-32 fun.
+
+Need to figure out how to do that, though.
+
+** Tue Nov 11 07:57:07 EST 2014
+
+Okay, I did some reading on the methods described in http://www.hotca.org/2014_Scripture_Readings.pdf and it gives a wonderful 
+cornucopia of details on how to compute the Epistle/Gospel readings. First take-away is that there are different methods for 
+epistles, weekday Gospel readings, and Sunday Gospel readings. It's also divided into different groups; the Epistles are all listed 
+as N weeks after Pentecost, while the Gospel readings are Nth week of St. E. Maybe I should change the data files accordingly?
+
+** Fri Dec 25 18:53:43 EST 2015
 
