@@ -108,3 +108,396 @@ as N weeks after Pentecost, while the Gospel readings are Nth week of St. E. May
 
 ** Fri Dec 25 18:53:43 EST 2015
 
+** Wed Jan 06 08:01:43 EST 2016
+I'm having a "what was I thinking" moment with next_dow. Yes, doing normal "second Tuesday in November" things 
+is all well and good, but the reality is, this will mostly be used with Church calculations. In other words, I 
+don't see myself doing:
+
+electionday=ocal.gregorian(year, 11, 1)
+electionday.next_dow(1, 1)
+electionday.next_dow(1, 2)
+
+(and if I wanted to, I could just call it with (year, 10,31)).
+
+More likely, I'll be doing:
+
+sunaftnat=ocal.julian(year, 12, 25)
+sunaftnat.next_dow(1, 0)
+
+Now, I don't mind doing an offset. An optional thing like:
+
+election=ocal.gregorian(year, 11, 1)
+election.next_dow(1, 1, offset=-1)
+election.next_dow(1, 2)
+
+It just adds value to days before doing the calculations.
+
+(in short, I looked at the other, and it just made me confused, and if my own idea confuses me, that's 
+not a good thing!)
+
+** Fri Jan 08 08:10:11 EST 2016
+
+ocal checks out, with the changes. test_ocal updated as well, of course.
+
+Now to start with readings. I think I'll start with Epistles, because they're simpler, and more likely to need 
+revamping. 
+
+Epistle algorithm is quite simple. Just offset from Pascha with some instructions if you need extra readings.
+
+Before I start that (*AND NO, I'M NOT PUTTING THIS OFF!! (well, maybe)*), I'm going to add some __x__ functions 
+for ocal, so we can easily compare two ocals or add/subtract days. I know I have an add_days function that I may 
+not need...
+
+** Fri Jan 08 11:16:42 EST 2016
+Okay, added __add__, __sub__, and __cmp__. __add__ only operates on an ocal and an int, returning a new ocal. 
+__sub__ operates on either an ocal (give a delta in int days), or a day (return a new ocal offset from that number 
+of days. __cmp__ is simple. Just compare ocal.dates
+
+Okay, I think that's enough putting off of the Epistles.
+
+For now, it'll simply return epistles[area][week][dow], whatever's there.
+
+What's there at the moment is the actual text of the Liturgy Epistle reading. The Gospel returns, for movable, 
+a dictionary indexed by service of the readings. For fixed, it returns a dictionary of the saints for that day 
+that refer to the service dictionary. 
+
+Issues:
+
+Epistle for fixed doesn't differenciate the feasts for a given day (indeed, it doesn't even tell you the saint for 
+the day). The problem is, it's hard to automate, assuming the Epistle document isn't modified (or is minimally 
+modified). For example, on Sept 2 (St. Mamas and St. John the Faster) that has an epistle for St. Mamas. Then it has:
+
+For the Faster.
+Brethren, such a high priest befitted us. . .
+(See November 13.)
+
+So I would have to find a way to link "For the Faster." back to St. John the Faster.
+
+However, the fixed Epistle at the moment just has (one of?) the reading(s) for the day. No saint, no second reading, 
+and no readings for different servies (eg. Royal Hours for Eve of Theophany). It also doesn't, for the "see"s, say 
+what reading it refers to. That's very helpful at the kliros. 
+
+The big challenge is that Epistle uses a minimally-modified Epistles.txt file. So if there's a new Epistles.txt file, 
+it's relatively easy to drop it in. But that makes it much harder to parse. If I wanted to do the same thing I did with 
+Gospels, I'd probably want to edit it to make the job easier (maybe even give them the same format, so I wouldn't have 
+to reinvent the wheel).
+
+I think Gospel is okay. That remains to be seen. Maybe change for a given day from dictionary to a list with a tuple.
+For example:
+
+Before: 
+{'New Indiction': {'L': 'Luke (4:16-22)'},
+ 'St. Symeon Stylite': {'L': 'John (10:9-16)'}}
+
+After:
+(('New Indiction', {'L': 'Luke (4:16-22)'}),
+ ('St. Symeon Stylite', {'L': 'John (10:9-16)'}))
+
+That way you could just iterate through them without having to muck about with .keys() or some such. The dictionary 
+inside each one is still mutable.
+
+** Fri Jan 08 17:28:44 EST 2016 (when does Triodion start?)
+
+Okay, now starting on reading, aaaand it's not as simple as I
+thought. First plan was write a general function that computes the
+time since Pascha (if it's before it's a negative number). If it's
+before the Triodion period, it computes based on the previous years'
+Pascha. But there are different definitions of "before the Triodion
+period".
+
+
+** Sun Jan 10 22:13:15 EST 2016 (Epistle using Gospel method for Sundays)
+
+So, the weekday Epistles are simple (just week-Pascha, and Bob's your
+uncle). But the Sunday Epistles after a certain (start of Triodion?)
+point follows the Gospels. So those aren't as simple.
+
+
+** Mon Jan 11 19:24:44 EST 2016 (more clarification from docs, and from email...)
+
+All the Triodion fun starts the day (yes, that's right) after
+Theophany. If Pascha is between Mar 22-24, on that day we read both
+Sunday after Theophany and Synaxis of St. John. Next Sunday begins the
+Triodion (Publican and Pharisee).
+
+Then there's a series of readings and weeks. Depending on when Pascha
+is determines how many filler weeks there are. That can be a lookup
+table.
+
+And this applies both to the Sunday Gospel and Epistle. But not the daily ones of each.
+
+I think for Sunday, I'll let the hinge be Jan 7 (os, of course). That
+will tell me how many weeks there are before the Triodion and I can
+just fill as appropriate.
+
+Before then, the Sundays of Luke bounce around a bit. Briefly, certain
+Sundays are always read at certain times. And the rest are read in
+order. Doesn't sound too hard.
+
+Matthew and the rest are nicely simple.
+
+Speaking of simple, there's also the Epistles...
+
+** Mon Jan 11 19:37:50 EST 2016 Details of algorithms in all 4 cases
+*** Daily Gospel readings
+
+Straightforward. The Lukan Jump happens. But the other jumps that the
+Sundays of Luke do (see below) don't happen. That's until
+Theophany. Between Theophany and Triodion, if needed, use the week of
+afterfeasts of Theophany (from the Menaion). When that's done, even if
+it's mid-week, use weeks 17-N to 16 of Matthew.
+
+If not needed, skip afterfeasts of Theophany.
+
+*** Daily Epistle readings
+
+Triodion (in my data) starts with Meat-fare Sunday. But in their
+description, it starts with Publican and Pharisee (as weeks 33 and
+34).
+
+"The daily Epistle readings are read in order, until they are
+finished, until the Sunday of the Publican and Pharisee. When the
+thirty-three weeks are finished, and there are no more Epistle
+readings until the commencement of the Triodion, read the daily
+Epistles thus:" (for N weeks, do weeks 17-N through 16 (so 2 weeks
+means 15 and 16).
+
+So for daily Epistle, the hinge is Publican and Pharisee (it's looking
+like that's the norm).
+
+So I follow the big Epistle table until Saturday of week 32. Then I
+switch to 17-N .. 16 for however many weeks I need until Pub/Phar
+
+*** Sunday Gospel readings
+
+This is where it gets weird... it's fine until the Lukan Jump. Then
+there are some Sundays of Luke that always happen on certain
+weeks. Then there's the fun stuff that happens after Theophany.
+
+There's a complicated table for that period that looks like, "If
+Pascha falls between <date> and <date>, do weeks A-B of Epistles and
+the following Gospel weeks.
+
+*** Sunday Epistle readings
+
+Before Nativity, it's simple. No jumping or anything. After Theophany,
+it tracks the Gospels.
+
+
+** Wed Jan 13 00:35:34 EST 2016 Plan of attack
+
+Need some helper functions. Given a befaft string and a year, return
+the actual corresponding date.
+
+I think the paschadiff function I have will probably work. May take
+some thought. To whit: 
+
+I'll need a triodion_start(year) function that returns Publican and
+Pharisee Sunday given the year (really, computes Pascha and
+subtracts...).
+
+So for the tricksy ones, I'll do:
+
+triod = triodion_start(d.ymd_j()[0]) # really wanted to say d.year
+if d < triod:
+    do fun things with that...
+
+For pre-Triodion Sundays, a general function coupled with a table would be good.
+
+** Wed Jan 13 15:48:36 EST 2016
+
+So yeah, I guess no plan. :) Well, kinda.
+
+Note about what's where in epistles and gospels. For the movables, the
+Sunday entry for a week is always (now) the Sunday AFTER the rest of
+the week. So Pascha is week 0, day 0 and stands alone (it's the
+zeroeth Sunday after Pascha). Bright Monday is the first (week 1)
+Monday (1) after Pascha. And Thomas Sunday is the first (again,
+week 1) Sunday after Pascha.
+
+Pentecost is the 7th Sunday after Pascha, and the preceeding week is
+the 7th week after Pascha.
+
+I'm dividing the tasks up into 4
+({epistle,gospel}_{weekday,sunday}). I suspect the Sundays will avail
+themselves of some common functions.
+
+** Wed Feb 03 21:26:54 EST 2016
+"So, on a private project, I initially planned to do it properly (plan it out, 
+start with unit tests, etc), but I got impatient, and just tried coding first. 
+Now it seems most of the work I did is the wrong approach. #LessonLearned"
+
+As it turns out, I wrote the four functions, _get_{epistle,gospel}_{week,sun}day()
+thinking they would return a series of actual readings (Book ch:verse). But now I 
+realize the first thing I need is a movable area, like "week N of AREA". Notably, 
+for any week (ideally, maybe day), it should return (area, w). Then, the caller should 
+call another function, get_epistle(area, w, d) or get_gospel(area, w, d) where 
+area is "Matthew", "Lent", etc, w is the week, and d is an ocal for the day in question.
+So:
+
+def get(epistle, area, w, d): return epistle.movable[area][w][d.dow]
+
+The reason for this is that the user will probably want to know the
+area and week. Some of the documents that this code will help generate
+will contain the "6th week of Matthew" information. And going from
+("matthew", 6) to epistle.movable[area][w][d.dow] is dirt simple.
+
+Then there's the subject of unit tests. To do unit tests properly, I
+know I should create a mock for ocal. I know the basics of how to
+create mocks, but am so tempted to just not worry about it. After all,
+ocal already has a good unit test. I trust that code. But the proper
+thing to do is mock it. That way, I don't have to "cut the cards". I
+already know how ocal is supposed to behave, and I can mock that up.
+
+The other thing with the unit tests is getting the right answer. I
+have plenty of resources and don't see any better way than to say,
+"gospel_sunday(ocal.julian(2016, 10, 24)) -> ('Luke', 6)" I expect the
+best approach is to select some choice examples.
+
+** Sun Feb 07 17:28:24 EST 2016 Design (cont)
+Talked with Jeremy at church, and he got me thinking more objectively
+and less functionally.
+
+First thing is that generating readings of various kinds has a
+definite hierarchy to it. An abstract class can determine which of 4
+areas (lent, pascha, pentecost, triodion) a date is, and subclasses
+can assign names to them (and also, for Gospels, add the cross
+area). The abstract can also handle the readings, etc. The hierarchy
+can be:
+
+class reading(object):
+    """ Handles just readings. It's both fixed and movable. Includes an abstract 
+	get_reading() method. """
+
+class movable(reading):
+    """ The main abstract class for movable. Includes the basics of finding areas.
+    (no Lucan jump). Also the real get_reading method (but a subclass will have to 
+	fill in the epigos field as well as area, week etc). """
+
+class m_gospel(movable):
+    """ Fills in some blanks for area names and epigos. Also adds to init more details 
+    (if area == "Matthew" and d > sunaftEC, set new area). """
+
+(same basic idea for m_epistle(movable))
+
+Question: do I need a whole separate class for the weekday and
+sundays? There's certainly different code there, in some cases. But
+really, it can be handled by: if d.dow == 0 ...
+
+I think I'd rather just use movable / epistle / gospel for the movable
+hierarchy. 
+
+Now, for the rest of it. I can subclass ocal to create a day, complete
+with all readings. It'll include m_epistle, m_gospel, f_epistle, and
+f_gospel. It can also include all the other cool things that I'll need
+in terms of information for a given day (tone, matins Gospel,
+fasting?). 
+
+
+So that church day <class cday(ocal)> will, when it inits, call 
+
+The class hierarchy:
+
+class reading(object):
+    """ Handles just readings. It's both fixed and movable. Includes an abstract 
+	get_reading() method. """
+
+class movable(reading):
+    """ The main abstract class for movable. Includes the basics of finding areas.
+    (no Lucan jump). Also the real get_reading method (but a subclass will have to 
+	fill in the epigos field as well as area, week etc). """
+
+class m_gospel(movable):
+    """ Fills in some blanks for area names and epigos. Also adds to init more details 
+    (if area == "Matthew" and d > sunaftEC, set new area). """
+
+class m_epistle(movable):
+    """ Includes code for finding the week after Pentecost, implement the Triodion, etc. """
+
+class fixed(reading):
+    """ Includes basic look-up code. Includes basic functions for
+    parsing strings like '10.1.0' 
+(first(1) Sunday (0) after(1) the 10th (10)"""
+
+class f_gospel(fixed):
+    """ Initializes fixed with Gospel readings. Other stuff? """
+
+class f_epistle(fixed):
+    """ Counterpart to f_gospel. """
+.
+** Mon Apr 25 17:24:47 EDT 2016 Back to it (design class reading)
+
+What's going to be in the reading class? What I wrote before:
+
+handles just readings. It's both fixed and movable. Includes an abstract
+get_reading() method. 
+
+But I think there's more to it. My philosophy has always been to do
+the most heaving lifting in the lowest classes (wow, this is almost as
+bad as when I was taught in college that race conditions could be
+solved by a system of masters and slaves!). So what CAN the reading
+class do?
+
+First and foremost, convert between:
+
+"Book ch:vers1-vers2" or "Book ch1:vers1-ch2:vers2, Book2 ch:vers1-vers2", etc
+and 
+[(book, (ch1, vers1), (ch2, vers2)), (book2, (ch, vers1), (ch, vers2))]
+
+Actually, that may be everything...
+
+Let's get some more specifics on patterns. I wrote something ages ago
+(in perl, so yeah, that dates it!) that converts any reading pattern
+into book, starting chapter, ending chapter, starting verse, ending
+verse. 
+
+So it'll convert a string "Book ch:vers-vers" into the aforementioned
+format. All well and good. Do I maintain both in the reading class?
+
+Oddly enough, it's easier to go from a string to a list than vise
+versa. Well, the list is going to look like:
+
+[('1John', (1, 1), (Infinity, Infinity)] -> 1John
+[('John', (22, 1), (23, Infinity)), ('John', (25, 1), (25, Infinity))]
+would translate to John 22-23,25
+
+Challenge with this is that there's no record of the ending of every
+chapter. If a reading says:
+
+Matt 23:37-39, 24:1-14
+
+there's no way of knowing from that string that it can be shorted to:
+
+Matt 23:37-24:14
+
+(since there are 39 verses in Matt 23). I could make (probably without
+too much effort, using my copy of KJV as a guide) a table of all the
+end verses. That would work fine for the NT, but the OT can be a bit
+squirrelly (am I talking about Masoretic or LXX?).
+
+And that's why going from text to list is easy (yeah, I may leave Matt
+23:37-39 as ending on line 39 instead of replacing it with Infinity,
+but what do I do for text if it really is ('Matt', (23, 27), (23,
+Infinity))?
+
+Okay, fine. For now, I'll, when I create a new reading (probably not
+with the constructor, but a set_reading() method), create a
+reading_list with the aforementioned format. It's value is not in it's
+compactness, but should I want to incorporate something to generate
+the actual text, I'll be good to go.
+
+So, what will be the methods in reading? set_reading() (that does all
+the parsing and converting), get_reading() that returns the text, and
+get_reading_list() that returns the list (both of those set in
+set_reading()).
+
+set_reading() can be cumulative. So if we call:
+
+set_reading("John 23")
+we can then do:
+set_reading("25")
+and it will add it to it... wait. Do I want to do that? It could be as
+easy as ",".join(readings). set_reading() will already handle "John 23,25"
+as well as "John 22:10-15,22-24". I don't think there's any value in
+multiple set_reading() calls. Put simply, "It won't happen!"
+

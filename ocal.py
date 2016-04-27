@@ -2,6 +2,9 @@
 
 import jdcal
 
+GREGORIAN = 1
+JULIAN = 2
+
 class ocal(object):
     """
 ocal -- Orthodox calendar management class
@@ -25,18 +28,16 @@ All days stored will be in MJD (possibly negative, if before 1858). jdcal functi
 return two values: jdcal.MJD_0 (2400000.5) and the modified julian date. I'll just always 
 pass that + jdcal.MJD_0.
 """
-    gregorian = 1
-    julian = 2
 
     @classmethod
     def gregorian(cls, year, month, day):
         "Given year,month,day, create an ocal instance according to the Gregorian calendar."
-        return cls(year=year, month=month, day=day, calendar=cls.gregorian)
+        return cls(year=year, month=month, day=day, calendar=GREGORIAN)
 
     @classmethod
     def julian(cls, year, month, day):
         "Given year,month,day, create an ocal instance according to the Julian calendar."
-        return cls(year=year, month=month, day=day, calendar=cls.julian)
+        return cls(year=year, month=month, day=day, calendar=JULIAN)
 
     @classmethod
     def mj_date(cls, date):
@@ -44,28 +45,47 @@ pass that + jdcal.MJD_0.
         return cls(date=date)
 
     def __init__(self, **kw):
-        """Ideally called with constructor methods. Optional parameters include:
-    year, month, day: year, month, day according to the calendar system.
-    date: modified julian date 
-    gregorian: if true (the default), use the Gregorian calendar to convert year,month,day to a julian date.
-    julian: if true, use the Julian calendar to convert year,month,day to a julian date.
+        """Initialize.
+
+        Ideally called with constructor methods. Optional parameters include:
+        * year, month, day: year, month, day according to the calendar system.
+        * date: modified julian date 
+        * gregorian: if true (the default), use the Gregorian calendar to convert year,month,day to a julian date.
+        * julian: if true, use the Julian calendar to convert year,month,day to a julian date.
 """
+        if 'calendar' in kw:
+            cal = kw['calendar']
+        else:
+            # default calendar: Gregorian
+            cal = GREGORIAN
         if 'date' in kw:
             self.date = kw['date']
         else:
-            if 'calendar' in kw:
-                cal = kw['calendar']
-            else:
-                cal = self.gregorian
             y=kw['year']
             m=kw['month']
             d=kw['day']
-            if cal == self.gregorian:
+            if cal == GREGORIAN:
                 self.date = jdcal.gcal2jd(y,m,d)[1]
-            elif cal == self.julian:
+            elif cal == JULIAN:
                 self.date = jdcal.jcal2jd(y,m,d)[1]
             else:
                 raise ValueError("Unknown calendar:{}".format(cal))
+        self.calendar = cal
+        self.sync_ymd()
+            
+    def sync_ymd(self):
+        def setymdat(p, ymd):
+            setattr(self, p+'year' , ymd[0])
+            setattr(self, p+'month', ymd[1])
+            setattr(self, p+'day'  , ymd[2])
+        setymdat('g', self.get_ymd_g())
+        setymdat('j', self.get_ymd_j())
+        if self.calendar == GREGORIAN:
+            ymd=self.get_ymd_g()
+        else:
+            ymd=self.get_ymd_j()
+        setymdat('', ymd)
+        setattr(self, 'dow'  , self.get_dow())
 
     def get_date(self):
         "Return the modified julian date"
@@ -80,6 +100,12 @@ pass that + jdcal.MJD_0.
         "return the year, month, and day of the instance, according to the Julian calendar"
         return jdcal.jd2jcal(jdcal.MJD_0, self.date)[:3]
 
+    def __repr__(self):
+        if self.calendar == GREGORIAN:
+            return "ocal.gregorian({}, {}, {})".format(*self.get_ymd_g())
+        else:
+            return "ocal.julian({}, {}, {})".format(*self.get_ymd_j())
+
     def get_dow(self):
         "return the day of week. 0: Sunday, 6: Saturday"
         # the MJD starts on a Wednesday. Offset it from Sunday so modulo works.
@@ -90,46 +116,69 @@ pass that + jdcal.MJD_0.
     def add_days(self, ndays):
         "add (or subtract if negative) ndays to the date"
         self.date += ndays
+        self.sync_ymd()
 
-    def next_dow(self, dow, n=1):
+    def __cmp__(self, oocal):
+        try:
+            return self.date - oocal.date 
+        except AttributeError:
+            return NotImplemented
+
+    def __add__(self, ndays):
+        return ocal(date=self.date + ndays, calendar=self.calendar)
+
+    def __sub__(self, o): # o could be int (get date n days ago), or ocal (diff between 2 ocals)
+        if hasattr(o, 'date'):
+            return int(self.date - o.date)
+        else:
+            return ocal(date=self.date - o, calendar=self.calendar)
+
+    def next_dow(self, nweeks, dow, offset=0):
         """advance the date to the next given day of week (dow. 0==Sunday)
 
-If n>0 advance forward n days of week, including today. So if today is already 
-dow and n==1, the date doesn't change.
-eg. to find US election day (first Tuesday after the first Monday):
+nweeks is number of weeks to advance (-1 means previous day of week)
+Offset is added to date before the calculation.
+
 d=ocal.gregorian(year, 11, 1)
-d.next_dow(1)
+d.next_dow(1, 1, offset=-1) # so if Nov 1 is Monday, doesn't change
 d.next_dow(2)
-
-If n<0 go back n days of week, not including today.
-So if you want to find the last Friday of November, you would do:
-d=ocal.gregorian(year, 12, 1)
-d.next_dow(5, -1)
-
-n==0 raises a ValueError
 """
-        # LET'S HEAR IT FOR THE ARITHMETIC 'IF'!!!
-        # ...
-        # <sits back down quietly>
-        if n == 0:
-            raise ValueError("0 is invalid value for next_dow()")
-        elif n > 0:
+        if nweeks > 0:
+            self.date += 1
+            self.date += offset
             self.date = self.date+(dow-self.get_dow())%7
-            self.date += (n-1)*7
-        else: # safe to say <0
+            self.date += (nweeks-1)*7
+        elif nweeks < 0:
             self.date -= 1
+            self.date += offset
             self.date = self.date - (self.get_dow()-dow) % 7
-            self.date += (n+1)*7
+            self.date += (nweeks+1)*7
+        else:
+            raise ValueError, "nweeks of 0 makes no sense"
+        self.sync_ymd()
+
+def gregorian(*a, **k):
+    return ocal.gregorian(*a, **k)
+
+def julian(*a, **k):
+    return ocal.julian(*a, **k)
+
+
+paschacache={}
 
 def pascha(year):
+    if year in paschacache:
+        return paschacache[year]
+
     pdate=ocal.julian(year, 3, 21)
     offset = ((year-1) % 19) + 1
     offset = (offset * 19) + 15
     offset = offset % 30
     #print("Offset is {}".format(offset))
-    pdate.add_days(offset+1)
+    pdate.add_days(offset)
     #print("pdate full moon on day:{}".format(pdate.get_dow()))
     
-    pdate.next_dow(0)
+    pdate.next_dow(1, 0)
     #print("pdate:{}".format(pdate.get_ymd_g()))
+    paschacache[year]=pdate
     return pdate
