@@ -501,3 +501,275 @@ easy as ",".join(readings). set_reading() will already handle "John 23,25"
 as well as "John 22:10-15,22-24". I don't think there's any value in
 multiple set_reading() calls. Put simply, "It won't happen!"
 
+** Mon Oct 10 07:21:59 EDT 2016 reading made easy
+There's a class I contributed to called python-scriptures:
+git@github.com:davisd/python-scriptures.git that does all the heavy lifting. 
+It includes an extract function that converts "
+
+** Tue Dec 13 05:46:13 EST 2016 back to basics
+python-scriptures was a lot of fun, but largely distracting. Going from a reading
+("Matt 23:37-39,24:1-14") to a reading_list ("Matthew", 23, 37, 24, 14) to an
+actual passage ("O Jerusalem, Jerusalem, the one who kills the prophets...") is
+not the first thing I need to worry about. If it stays as "Matt 23:37-39...", I'm
+happy.
+
+I've been stopping and starting, and stopping and starting (no channelling
+Lilly von Schtupp!). I have some ideas down here and also in the code. I have
+a class hierarchy in the code that starts with reading then goes movable/fixed,
+then gospel/epistle. But I've never defined methods for the different classes. 
+
+I always like starting at the high level and let that dictate (where possible) 
+what the lower levels need to do.
+
+Somewhere back in those notes, I talked about a cday object (Church day). This 
+would be a subclass of ocal, but would include all those things that make up a 
+day (Liturgy Epistle and Gospel, Matins Gospel, Saints, tone, fasting). The 
+Epistle and Gospel would be part of Liturgy, which is part of Liturgical, etc. 
+
+Would all the data be stored in the __init__? Or would we have a series of 
+cday.set_xxx() methods? I'm leaning towards the latter. 
+
+I remember talking about class programming vs functional with Jeremy, but I can't 
+recall why we went with class programming. How would the classes look?
+
+What about some kind of reading calculator class? The calculator I envisioned 
+previously had a hierarchy of reading / moving/fixed / epistle/gospel. But 
+how's that going to work? If I want all four of moving/fixed epistle/gospel, I 
+need four instances of four separate classes? Blech. That can't be right.
+
+There's a lot of common code in here. One method will determine the general 
+(Triodion, Pentecostarian, After Pentecost) area, another (lower level) more 
+specific, like Lucan jump, before/after Theophany. 
+
+Okay, let's go back to cday. We could certainly, in cday.__init__, do a series 
+of set_fixed_epistle(), set_movable_epistle(), set_fixed_gospel(), set_movable_gospel()
+(all four would be called, and a set_gospel() could call set_{fixed,movable}_gospel(), 
+and a set_epis_gos() could call both set_epistle() and set_gospel(). That could 
+work.
+
+
+I think the way to do this is with multiple inheritance. There's just frankly too 
+much to cram into cday itself. So, for example, there's a fasting class that cday 
+inherits from, and fasting includes set_fasting(), which sets self.fasting to some 
+string that describes the fasting rules for the day. fasting also inherits from ocal, 
+so it knows what day it is.
+
+So, the hierarchy:
+
+class ocal(object):
+    pass
+
+class fasting(ocal):
+    pass
+
+class cday(fasting, ocal):
+    pass
+
+Then, if there's a
+
+class episgos(ocal):
+    pass
+
+I would have
+
+class cday(fasting, episgos, ocal):
+    pass
+
+Adding new "features" to cday is then just a matter of writing a class 
+that subclasses from ocal and includes a set_<class> method that creates 
+self.<class> to be the value of that.
+
+I can, for episgos, also include other classes in it. So, cday can inherit 
+from fasting, episgos, and ocal. episgos can inherit from epistle, gospel.
+Both of those can inherit from reading, and reading inherits from ocal.
+
+So what do I want to be set? I could be all detail-specific-plan-ahead-for
+-full-services-what-was-I-thinking-I'm-running-out-of-dashes and have a 
+separate entry for Matins, Royal Hours, etc. There's also the question of 
+movable or fixed. For a certain list of "vigil-level saints" (along with 
+feasts for our Saviour or the Mother of God):
+
+Feasts of the Master:
+    Exaltation of the Cross (Sep. 14th) 
+    Nativity of Christ (Dec. 25th) 
+    Theophany (Jan. 6th) 
+    Transfiguration (Aug. 6th)
+Feasts of the Mother of God: 
+    Nativity (Sep. 8th)
+    Entrance (Nov. 21st) 
+    Presentation (Feb. 2nd) 
+    Annunciation (March 25th) 
+    Dormition (Aug. 15th)
+Vigil-rank feasts:
+    The Assumption of St. John the Theologian (Sep. 26th) 
+    St. John Chrysostom (Nov. 13th)
+    St. Sabbas the Sanctified (Dec. 5th)
+    St. Nicholas of Myra (Dec. 6th)
+    St. Anthony the Great (Jan. 17th)
+    St. Euthymios the Great (Jan. 20th)
+    St. Gregory the Theologian (Jan. 25th)
+    The Three Hierarchs (Jan. 30th)
+
+I need to make note of them, somewhere. For those, the movable epistle 
+and gospel are saved until the next day possible.
+
+** Wed Dec 14 21:56:21 EST 2016 Fledgling plan
+
+What I need is a hierarchy of classes, ending in episgos.py. It will ultimately 
+inherit from ocal, so will include all of ocal's cool tools. 
+
+What should happen where? I'll start with a general list of functions, and 
+then decide where they should live.
+
+The first one is simply an integer time since (or before, if <0) Pascha.
+This is at the highest level, as everyone needs it. Maybe even in ocal?
+Really, it would just be self - getpascha(self.year), unless it's too 
+negative, in which case it would be self - getpascha(self.year - 1).
+
+After that, there is a finding of the area. These are -- or may be -- 
+different for different needs (Sunday Gospel, for example, includes the 
+Lucan Jump). So I'll leave those be for now.
+
+Daily Movable Epistle: Straight shot from Pascha until 33 weeks. If more are 
+needed, take weeks 16-N:16.
+
+Sunday Movable Epistle: straight shot until Theophany (really, until Sunday of 
+the Forefathers). Then tracks the Gospels.
+
+Daily Movable Gospel is similar to Daily Epistle. After end of Luke:
+  When the weekday Gospel readings of Luke are finished and we have not 
+  yet reached the Triodion, read the Gospel readings for the after-feasts 
+  of Theophany; and if these also are finished and Gospel readings are 
+  needed until the commencement of the Triodion, go to the Gospel readings 
+  according to Matthew and read as many weekday readings as are needed until 
+  the commencement of the Triodion.
+The Matthew readings are 16-N:16, like the Epistles, except it's from Matthew.
+
+Sunday Movable Gospel. This is it's own special ... challenge. It's easy, until 
+the Exaltation of the Cross. Then we pick up our Cross and follow along.
+
+
+Functions:
+
+pascha_offset: signed int self - getpascha(self.year). That can be at the 
+highest level in movable. 
+
+getreading -- also in movable. Given a week (dict of 0..6), returns the reading 
+for today (need exception for Holy Thursday's 12 Gospels). 
+
+post_theophany: handle the Sunday Epistle and Gospel readings for the time 
+between Theophany and Triodion.
+
+get_area: different for Epistle and Gospel.
+Epistle has lent, pascha, pentecost (all 36 weeks). However, pentecost takes a 
+break after 33, and does the rest at the start of the Triodion.
+Gospel has: Luke, Matthew, lent (starts with Sunday of Orthodoxy), 12 (special, 
+for the 12 Gospels on Holy Thursday evening), pascha. And, like Epistle, the last 
+4 weeks of Luke are the first 4 of the Triodion
+
+
+get_daily_epistle: in epistle.py, of course. Handles the N-33 changes + beginning 
+of Triodion. 
+
+get_sunday_epistle: simple, then outsources to post_theophany
+
+get_daily_gospel: in gospel.py, does something similar to N-33 for daily epistles.
+
+get_sunday_gospel: *shudder*
+
+
+For the daily readings, I want to see what kind of commonality can be found. 
+33rd week after Pentecost for Epistle, and 16th week of Luke for Gospel are 
+both Publican and Pharisee. I presume the dailies track them. Before then, 
+if we need more, a common function can ... can what? subtract N from 16. 
+Okay, maybe I don't need some common function. Once I work out (separately) 
+where I need to do the stuffing and what gets stuffed, the actual stuffing is 
+academic. 
+
+That's all for movable. Fixed is simpler. Most days it's a trivial lookup of 
+month/day. But there's the fun:
+
+        '21.1.0': {'New-martyrs of Russia': {'L': 'Luke (21:12-19)'}},
+        '6.-1.0': {'Sunday before Theophany': {'L': 'Mark (1:1-8)'}},
+        '6.-1.6': {'Saturday before Theophany': {'L': 'Matthew (3:1-6)'}},
+        '6.1.0': {'Sunday after Theophany': {'L': 'Matthew (4:12-17)'}},
+        '6.1.6': {'Saturday after Theophany': {'L': 'Matthew (4:1-11)'}}
+
+things that need parsing. I think much of that is in ocal already (somewhere 
+way up there I talked about how ocal handles "nth xxxday before date"). 
+
+So for the strings that are keys, break them up into (6, -1, 0), and get 
+ocal.julian(year, month, x[0]).next_dow(x[1], x[2]). Need to be careful 
+to do both next and previous months. All that code can live in fixed.
+
+Then fixed_epistle can be nothing more than:
+return (fixed.)get_fixed(epistle.fixed), with gospel similar.
+
+I think that's all I need in terms of functions, and the classes they're in.
+
+What's the class hierarchy? 
+
+class movable(ocal):
+    pascha_offset()
+	"If self - pascha < Publican/Pharisee:
+        return self - pascha(last year)
+     else
+        return self - pascha(this year)"
+
+    getreading()
+	"Given a week (dict of 0..6), returns the reading
+for today (need exception for Holy Thursday's 12 Gospels)."
+
+    post_theophany()
+	"handle the Sunday Epistle and Gospel readings for the time
+between Theophany and Triodion."
+
+class fixed(ocal):
+    get_fixed(fixedict)
+	"Basic fixed. Includes 6.-1.0 parsing.
+	Return value: dict: {'book':..., 'chverse':..., ?'see':...}
+
+class epistle(movable, fixed)
+    get_daily?_epistle()
+
+	get_sunday_epistle()
+
+	get_fixed_epistle()
+
+class gospel(movable, fixed)
+    get_daily?_gospel()
+
+	get_sunday_gospel()
+
+    get_fixed_gospel()
+
+class episgos(epistle, gospel):
+    set_episgos()
+
+** Sun Dec 18 23:20:48 EST 2016 Morning epiphany
+
+Have oday init do:
+    self.result = {}
+    super(oday, self).__init__(self.result, **kw)
+
+Then, all the immediats superiors of oday fill result with 
+whatever is appropriate. So, for example, episgos.__init__ 
+generates all the epistle/gospel/week info and puts it in 
+self.result. Fasting.init sets self.result['fasting'] = 
+'fish allowed' (or whatever)
+
+This frees up oday from worrying about calling all these 
+silly get_whatever() functions. All we have to do in oday 
+is worry about actually printing it.
+
+Actually........why muck about with result? Why not just 
+setattr?
+
+So, we call fasting.init via super(), and fasting.init 
+sets self.fasting.
+
+Okay, a reason for mucking about with result is that we 
+can just loop through result, printing everything out.
+
+Actually, no reason why we can't do both.
+
