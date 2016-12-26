@@ -71,9 +71,9 @@ modified julian date. I'll just always pass that + jdcal.MJD_0.
             m = kw['month']
             d = kw['day']
             if cal == GREGORIAN:
-                self.date = jdcal.gcal2jd(y, m, d)[1]
+                self.date = int(jdcal.gcal2jd(y, m, d)[1])
             elif cal == JULIAN:
-                self.date = jdcal.jcal2jd(y, m, d)[1]
+                self.date = int(jdcal.jcal2jd(y, m, d)[1])
             else:
                 raise ValueError("Unknown calendar:{}".format(cal))
         self.calendar = cal
@@ -169,6 +169,14 @@ modified julian date. I'll just always pass that + jdcal.MJD_0.
         except AttributeError:
             return NotImplemented
 
+    def __iadd__(self, n):
+        self.add_days(n)
+        return self
+
+    def __isub__(self, n):
+        self.add_days(-n)
+        return self
+    
     def __add__(self, ndays):
         return ocal(date=self.date + ndays, calendar=self.calendar)
 

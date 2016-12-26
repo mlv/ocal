@@ -23,6 +23,9 @@ class ocaltest(unittest.TestCase):
         self.assertYMD(o, ocal.GREGORIAN, 1995, 9, 27,
                        3, "init with given gregorian")
 
+        self.assertEqual(type(o.date), int, "o.date is {}, not int"
+                         .format(type(o.date)))
+
         o = ocal.ocal(year=1995, month=9, day=27)
         self.assertEqual(o.date, 49987,
                          "init default:gregorian returned wrong mjd date")
@@ -34,6 +37,9 @@ class ocaltest(unittest.TestCase):
                          "init with julian didn't return correct mjd date")
         self.assertYMD(o, ocal.JULIAN, 1995, 9, 14, 3,
                        "init with given julian")
+        self.assertEqual(type(o.date), int, "o.date is {}, not int"
+                         .format(type(o.date)))
+
 
         try:
             o = ocal.ocal(year=1995, month=9, day=14, calendar=47)
@@ -157,7 +163,7 @@ class ocaltest(unittest.TestCase):
             o.next_dow(0, 3)  # 0: ValueError
         except ValueError:
             pass
-        except e:
+        except BaseException as e:
             self.fail("Unexpected exception thrown:", e)
         else:
             self.fail("No exception thrown. Expected ValueError")
@@ -183,7 +189,8 @@ class ocaltest(unittest.TestCase):
         rp = repr(o)
         exp = "ocal.gregorian(2016, 1, 7)"
         self.assertEqual(rp, exp,
-                         "repr failure. Expected '{}', got '{}'".format(exp, rp))
+                         "repr failure. Expected '{}', got '{}'"
+                         .format(exp, rp))
 
     def test__add(self):
         n = ocal.julian(2015, 12, 25)
@@ -191,7 +198,8 @@ class ocaltest(unittest.TestCase):
         self.assertYMD(th, ocal.JULIAN, 2016, 1, 6,
                        2, "__add from Nativity 2015")
         self.assertEqual(th.get_ymd_j(), (2016, 1, 6),
-                         "__add__ failed. Nativity+12 is {}".format(th.get_ymd_j()))
+                         "__add__ failed. Nativity+12 is {}"
+                         .format(th.get_ymd_j()))
 
     def test__sub(self):
         th = ocal.julian(2016, 1, 6)
@@ -199,11 +207,29 @@ class ocaltest(unittest.TestCase):
         self.assertYMD(n, ocal.JULIAN, 2015, 12, 25,
                        4, "__sub__from Theophany (")
         self.assertEqual(n.get_ymd_j(), (2015, 12, 25),
-                         "__sub__ failed. Theophany-12 is {}".format(n.get_ymd_j()))
+                         "__sub__ failed. Theophany-12 is {}"
+                          .format(n.get_ymd_j()))
 
-        self.assertEqual(
-            th - n, 12, "relative difference failed. Difference between Theophany and Nativity is {} days".format(th - n))
+        self.assertEqual(th - n, 12, "relative difference failed."
+                         "Difference between Theophany and Nativity is {} days"
+                         .format(th - n))
 
+    def test__iadd(self):
+        th = ocal.julian(2016, 1, 6)
+        svth = th
+        th += 3
+        self.assertEqual(id(th), id(svth), "+= changed th object")
+        nth = ocal.julian(2016, 1, 9)
+        self.assertEqual(th, nth, "+= {} not the 9th".format(th))
+        
+    def test__isub(self):
+        th = ocal.julian(2016, 1, 6)
+        svth = th
+        th -= 3
+        self.assertEqual(id(th), id(svth), "-= changed th object")
+        nth = ocal.julian(2016, 1, 3)
+        self.assertEqual(th, nth, "-= {} not the 3rd".format(th))
+        
     def test__cmp(self):
         d1 = ocal.gregorian(2016, 1, 5)
         d2 = ocal.gregorian(2016, 1, 6)
@@ -232,8 +258,9 @@ class ocalpascha(unittest.TestCase):
                 o.dow, 0, "Pascha for {} not on Sunday according to o.dow")
             self.assertEqual(
                 o.get_dow(), 0, "Pascha for year {} not on Sunday!")
-            self.assertEqual(o.get_date(), yd[
-                             1], "Pascha failed for year {} ({} != {})".format(yd[0], o.get_date(), yd[1]))
+            self.assertEqual(o.get_date(), yd[1],
+                             "Pascha failed for year {} ({} != {})"
+                             .format(yd[0], o.get_date(), yd[1]))
 
 if __name__ == "__main__":
     unittest.main()
