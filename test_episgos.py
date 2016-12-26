@@ -3,21 +3,25 @@ import ocal
 import episgos
 
 
+def checkocal(oc):
+    # movable inherits everything from ocal, so
+    # give it a once-over, making sure ocal works.
+    o = episgos.movable(year=1995, month=9, day=27,
+                        calendar=ocal.GREGORIAN)
+    oc.assertEqual(o.year, 1995, "Year wrong")
+    oc.assertEqual(o.month, 9, "Month wrong")
+    oc.assertEqual(o.dow, 3, "Dow wrong")
+
+    o = episgos.movable(date=49987)
+    oc.assertEqual(o.date, 49987, "date didn't return itself")
+
+    o = episgos.movable(year=1995, month=9, day=14, calendar=ocal.JULIAN)
+    oc.assertEqual(o.date, 49987, "Date wrong after julian init")
+
+    
 class test_movable(unittest.TestCase):
     def test_init(self):
-        # movable inherits everything from ocal, so
-        # give it a once-over, making sure ocal works.
-        o = episgos.movable(year=1995, month=9, day=27,
-                            calendar=ocal.GREGORIAN)
-        self.assertEqual(o.year, 1995, "Year wrong")
-        self.assertEqual(o.month, 9, "Month wrong")
-        self.assertEqual(o.dow, 3, "Dow wrong")
-
-        o = episgos.movable(date=49987)
-        self.assertEqual(o.date, 49987, "date didn't return itself")
-
-        o = episgos.movable(year=1995, month=9, day=14, calendar=ocal.JULIAN)
-        self.assertEqual(o.date, 49987, "Date wrong after julian init")
+        checkocal(self)
 
     def test_pascha_offset(self):
         om = episgos.movable(year=2001, month=8, day=23,
@@ -132,6 +136,61 @@ class test_movable(unittest.TestCase):
             om = episgos.movable(year=y, month=1, day=31, calendar=ocal.JULIAN)
             ret = om.post_theophany()
             self.assertEqual(ret, exp, "For {}, {} != {}".format(y, ret, exp))
-    
+
+
+class test_fixed(unittest.TestCase):
+    def test_init(self):
+        checkocal(self)
+
+    def setUp(self):
+        self.fixd = [
+            None,
+            {
+                1: 'oneret',
+                '6.-1.0': 'SBTh',
+            },
+            {}, {}, {}, {}, {},
+            {}, {}, {}, {}, {},
+            {
+                12: 'stherman',
+                '25.-2.0': '2SunBN',
+                '30.1.6': '2SatA30',
+            },
+        ]
+
+    def test_get_fixed_normal(self):
+        d = episgos.fixed(year=2010, month=12, day=12, calendar=ocal.JULIAN)
+        ret = d.get_fixed(self.fixd)
+        self.assertEqual(ret, 'stherman', "normal, didn't get St. Herman")
+        d += 1
+        ret = d.get_fixed(self.fixd)
+        self.assertEqual(ret, [], "Didn't get nothing in normal")
+
+    def test_get_fixed_befaft(self):
+        sth = episgos.fixed(year=2016, month=12, day=12, calendar=ocal.JULIAN)
+        
+        fxd = sth.get_fixed(self.fixd)
+
+        self.assertIn('2SunBN', fxd, "Missing 2SunBN")
+        self.assertIn('stherman', fxd, "Missing stherman")
+        self.assertEqual(len(fxd), 2,
+                         "fxd {}, expected just 2SunBN and stherman"
+                         .format(fxd))
+
+        d30 = episgos.fixed(year=2015, month=1, day=4, calendar=ocal.JULIAN)
+        fxd = d30.get_fixed(self.fixd)
+        self.assertEqual(fxd, ['2SatA30'], "Missing 2SatA30")
+
+        prevyr = episgos.fixed(year=2001, month=12, day=31,
+                               calendar=ocal.JULIAN)
+        ret = prevyr.get_fixed(self.fixd)
+        self.assertEqual(fxd, 'SBTh', 'Got {} expected SBTh'.format(fxd))
+        
+        missing = episgos.fixed(year=2014, month=4, day=1,
+                                calendar=ocal.JULIAN)
+        ret = missing.get_fixed(self.fixd)
+
+        self.assertEqual(ret, [], "didn't return None")
+
 if __name__ == "__main__":
     unittest.main(buffer=False)
