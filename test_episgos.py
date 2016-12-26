@@ -154,24 +154,26 @@ class test_fixed(unittest.TestCase):
             {
                 12: 'stherman',
                 '25.-2.0': '2SunBN',
-                '30.1.6': '2SatA30',
+                '30.1.6': 'SatA30',
             },
         ]
 
     def test_get_fixed_normal(self):
-        d = episgos.fixed(year=2010, month=12, day=12, calendar=ocal.JULIAN)
+        d = episgos.fixed(year=2012, month=12, day=12, calendar=ocal.JULIAN)
         ret = d.get_fixed(self.fixd)
-        self.assertEqual(ret, 'stherman', "normal, didn't get St. Herman")
+        self.assertEqual(ret, ['stherman'], "normal, didn't get St. Herman. Got {}"
+                         .format(ret))
         d += 1
         ret = d.get_fixed(self.fixd)
-        self.assertEqual(ret, [], "Didn't get nothing in normal")
+        self.assertEqual(ret, [], "Got {}. Expected []".format(ret))
 
     def test_get_fixed_befaft(self):
         sth = episgos.fixed(year=2016, month=12, day=12, calendar=ocal.JULIAN)
         
         fxd = sth.get_fixed(self.fixd)
 
-        self.assertIn('2SunBN', fxd, "Missing 2SunBN")
+        self.assertIn('2SunBN', fxd, "Missing 2SunBN. Got {} for {}"
+                      .format(fxd, sth))
         self.assertIn('stherman', fxd, "Missing stherman")
         self.assertEqual(len(fxd), 2,
                          "fxd {}, expected just 2SunBN and stherman"
@@ -179,12 +181,12 @@ class test_fixed(unittest.TestCase):
 
         d30 = episgos.fixed(year=2015, month=1, day=4, calendar=ocal.JULIAN)
         fxd = d30.get_fixed(self.fixd)
-        self.assertEqual(fxd, ['2SatA30'], "Missing 2SatA30")
+        self.assertEqual(fxd, ['SatA30'], "Missing SatA30, got {}".format(fxd))
 
         prevyr = episgos.fixed(year=2001, month=12, day=31,
                                calendar=ocal.JULIAN)
         ret = prevyr.get_fixed(self.fixd)
-        self.assertEqual(fxd, 'SBTh', 'Got {} expected SBTh'.format(fxd))
+        self.assertEqual(ret, ['SBTh'], 'Got {} expected SBTh'.format(ret))
         
         missing = episgos.fixed(year=2014, month=4, day=1,
                                 calendar=ocal.JULIAN)
