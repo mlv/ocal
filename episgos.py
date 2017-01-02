@@ -1,5 +1,9 @@
 import ocal
 import re
+from gospel import fixed as gospel_fixed
+from gospel import movable as gospel_movable
+from epistle import fixed as epistle_fixed
+from epistle import movable as epistle_movable
 
 
 class movable(ocal.ocal):
@@ -11,17 +15,19 @@ class movable(ocal.ocal):
     def __init__(self, **kw):
         super(movable, self).__init__(**kw)
 
-    def pascha_offset(self):
+    def get_area_week(self):
         """return tuple, offset in days between self and pascha
         and relevant year"""
         
         for year in (self.year, self.year-1):
             p = ocal.pascha(year)
             offset = self - p
+            # print("p:{}, offset:{}".format(p, offset))
             if offset >= -70:
                 break
 
-        return offset, year
+        self.p_year = year
+        self.p_offset = offset
 
     def getreading(self, wk):
         """Given a week (dict containing keys 0..6).
@@ -43,7 +49,7 @@ class movable(ocal.ocal):
         theo = ocal.julian(year=self.year, month=1, day=6)
         dif = p-theo
 
-        return (dif - 78) / 7
+        return (dif - 78) / 7, (self - theo - 8) // 7
 
 
 class fixed(ocal.ocal):
@@ -70,8 +76,8 @@ class fixed(ocal.ocal):
 
         # print("checking {}".format(self))
         # Do the hard part first
-        for m in range(self.month-1, self.month+2, 1):
-            y = self.year
+        for m in range(self.jmonth-1, self.jmonth+2, 1):
+            y = self.jyear
             if m == 0:
                 m = 12
                 y = y - 1
@@ -105,10 +111,123 @@ class fixed(ocal.ocal):
                 else:
                     pass  # print("Not a match for {},{}".format(m, k))
 
-        if self.day in fixedict[self.month]:
-            fixeds.append(fixedict[self.month][self.day])
+        if self.jday in fixedict[self.jmonth]:
+            fixeds.append(fixedict[self.jmonth][self.jday])
 
         for m, k in befafts:
             fixeds.append(fixedict[m][k])
 
         return fixeds
+
+
+class epistle(movable, fixed):
+    """Includes methods for epistles. Makes good use of
+    movable and fixed."""
+
+    def __init__(self, **kw):
+        super(epistle, self).__init__(**kw)
+
+    def _get_area_week_sunday(self):
+        assert self.dow == 0
+
+        if self.p_offset < 0:
+            if self.p_offset < -49:
+                self.ep_area = 'pentecost'
+                self.ep_week = 34 + ((self.p_offset + 70) // 7)
+            else:
+                self.ep_area = 'lent'
+                self.ep_week = (self.p_offset + 49) // 7
+        elif self.p_offset <= 49:
+            # Yes, <=: Pentecost is considered part of 'pascha'
+            self.ep_area = 'pascha'
+            self.ep_week = self.p_offset // 7
+        else:
+            off = (self.p_offset - 49) // 7
+            self.ep_area = 'pentecost'
+            self.ep_week = off
+
+            self.calendar = ocal.JULIAN
+            if off <= 33:
+                return
+
+            off -= 34
+            waftTh = [
+                [],
+                [32],
+                [29, 32],
+                [29, 32, 17],
+                [29, 31, 32, 17],
+            ]
+
+            thoff, thidx = self.post_theophany()
+            # print("thoff: {}, thidx: {}".format(thoff, thidx))
+            if thoff <= 0:
+                return  # This'll be handled by Theophany, et.al
+            self.ep_week = waftTh[thoff][thidx]
+            return
+
+    def _get_area_week_weekday(self):
+        assert self.dow != 0
+        
+        if self.p_offset < 0:
+            triod_off = self.p_offset + 70
+            if triod_off < 14:  # 34 or 35W afP
+                self.ep_week = 34 + (triod_off // 7)
+                self.ep_area = 'pentecost'
+            else:
+                self.ep_week = (triod_off - 14) // 7
+                self.ep_area = 'lent'
+        elif self.p_offset < 49:  # Pascha
+            self.ep_week = (self.p_offset + 6) // 7
+            self.ep_area = 'pascha'
+        else:
+            self.ep_area = 'pentecost'
+
+            # -7: starts with week 1 after Pentecost, not 0
+            offset = self.p_offset - (49 - 7)
+            w = offset // 7
+            if w > 33:
+                nextp = ocal.pascha(self.year)
+                nextp -= 70
+                needed = (nextp + 6 - self) // 7
+                self.ep_week = range(16, 9, -1)[needed - 1]
+#                print("for {:39} offset: {}, week {}"
+#                      .format(self, w, self.ep_week))
+            else:
+                self.ep_week = w
+#                print("For {:39} w{}".format(self, self.ep_week))
+#        print("For {:39} week: {}{}".format(self, self.ep_area[0], self.ep_week))
+        
+    def get_area_week(self):
+        """Returns time period we're in ("lent", "pascha",
+        "pentecost") and weeks after start thereof"""
+        super(epistle, self).get_area_week()
+
+        # These two are debugging, in case it doesn't get set
+        self.ep_area = repr(self)
+        self.ep_week = self.p_offset
+        if self.dow == 0:
+            self._get_area_week_sunday()
+        else:
+            self._get_area_week_weekday()
+                    
+    def get_movable_epistle(self):
+        """Simple. Just returns getreading for self.ep_area/week/dow
+        """
+        return self.getreading(epistle_movable[self.ep_area][self.ep_week])
+
+    def get_fixed_epistle(self):
+        """Gets the fixed calendar epistle(s) for the day. Returns []
+        if none.
+        """
+        return self.get_fixed(epistle_fixed)
+
+
+class gospel(fixed, movable):
+    """                SunAftCross = ocal.julian(self.year, 9, 14)
+                SunAftCross.next_dow(1, 0)
+                if self < SunAftCross:
+                    self.ep_area = "
+"""
+    pass
+

@@ -773,3 +773,85 @@ can just loop through result, printing everything out.
 
 Actually, no reason why we can't do both.
 
+** Sat Dec 31 09:35:10 EST 2016 T-14:24:50
+
+Starting to rethink (a dangerous pasttime ... yeah, yeah)
+lowly pascha_offset. Should the year start with Lent or 
+Triodion? The Triodion period is quite fixed (last 3 weeks 
+of Pentecost Epistle and Luke Gospel). To be precise, it's
+Pent 33-35 + Lent 0 for Epistle, and Luke 16-19 for Gospel
+(Gospel Lent has no week 0). I think I'll keep it in the new 
+year. The get_movables will have to handle it specially, but 
+it doesn't have to be part of the END of year oddities.
+
+So, what will get_area_off() return for Triodion? It's going 
+to be strange, but I think it should be a negative offset from 
+lent. There's no set triodion "area", so the code should be able 
+to handle it. That'll make 
+
+Stop the presses. One thing I'll need is information to create 
+documents like the Weekday Scripture Readings that don't have 
+the actual chapter and verse for every day, but things like:
+
+16-21 | 35th week after Pentecost | Meat-fare week
+
+That's going to be different for weekday and Sunday, of course. 
+So, should it stay in get_area_off or be folded into something 
+farther down? 
+
+I think the way I'll break things up is to ensure each method 
+has some reason for standing alone. I've already separated 
+get_area_off into separate Epistle and Gospel sections. 
+
+** Sat Dec 31 15:10:45 EST 2016 Further thought (T-8:49:15)
+
+get_area_off is going to be rebranded get_area_week. It will 
+setattr area and week. That way, the actual get reading will 
+be a trivial get_reading(area, week, dow). Of course, this 
+means that all these get_{{daily,sunday}_,}epistle functions 
+will be moot. Or should I separate get_area_week into {daily,
+sunday}?
+
+Idea: have get_movable_epistle just use ep_area, ep_week and dow.
+
+So, given that all the get_*_epistles are going away, should I 
+also split get_area_week?
+
+Another thought came up; if I have both epistle.get_area_week 
+and gospel.get_area_week, how do I distinguish them? I tested 
+this in mro.py with a 'get' method in both epistle and gospel,
+and they both call super(cls, self).get(). I then tried oday.get(), 
+but it wouldn't work until I added a movable.get()
+
+So, if I add a dummy movable.get_area_week, I can have that called 
+before I call epistle and gospel.get_area_week. It can do some of 
+the common things, like getting the offset from Pascha.
+
+Another idea I had in my cold-addled dream state was to change 
+ocal.sync_ymd to just sync(), and include calls to sync in all 
+the relevant subclasses (that do setattrs) (with the relevant
+super() calls).
+
+So I can repurpose movable.get_area_week to do pascha_offset.
+
+** Sun Jan 01 09:35:06 EST 2017 Reverse engineering scripture docs
+
+The wonderful documents that tell how to generate the readings 
+can be a bit confusing. I *thought* the 33-W daily readings 
+preceeded the 33W Sunday readings, but in 2015, the readings went:
+
+Daily	  Sunday
+30W		  <Sunday before Nativity>
+31W		  <Sunday after Nativity>
+32W		  <Sunday before Theophany>
+33W		  <Sunday after Theophany>
+16W(!)	  33W
+34W		  34W <and the Triodion after that>
+
+So, while I thought the start of the year was the Monday before 
+Publican & Pharisee, it's not. It starts on Publican and Pharisee.
+Some of the years were confusing, in that they didn't have enough 
+weeks to need insertion of 16W. So, the dailies go until (and including)
+the 33W, then insert from 10-16W as needed before Sunday of Publican
+and Pharisee.
+
