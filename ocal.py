@@ -110,10 +110,13 @@ modified julian date. I'll just always pass that + jdcal.MJD_0.
         return jdcal.jd2jcal(jdcal.MJD_0, self.date)[:3]
 
     def __repr__(self):
+        # 8:-2: change "<class 'foo'>" to "foo"
         if self.calendar == GREGORIAN:
-            return "ocal.gregorian({}, {}, {})".format(*self.get_ymd_g())
+            return "{}.gregorian({}, {}, {})".format(
+                repr(self.__class__)[8:-2], *self.get_ymd_g())
         else:
-            return "ocal.julian({}, {}, {})".format(*self.get_ymd_j())
+            return "{}.julian({}, {}, {})".format(
+                repr(self.__class__)[8:-2], *self.get_ymd_j())
 
     def get_dow(self):
         "return the day of week. 0: Sunday, 6: Saturday"
@@ -220,12 +223,12 @@ def julian(*a, **k):
     return ocal.julian(*a, **k)
 
 
-paschacache = {}
+# paschacache = {}
 
 
 def pascha(year):
-    if year in paschacache:
-        return paschacache[year]
+    # if year in paschacache:
+    #     return paschacache[year]
 
     pdate = ocal.julian(year, 3, 21)
     offset = ((year-1) % 19) + 1
@@ -237,5 +240,5 @@ def pascha(year):
     
     pdate.next_dow(1, 0)
     # print("pdate:{}".format(pdate.get_ymd_g()))
-    paschacache[year] = pdate
+    # paschacache[year] = pdate
     return pdate

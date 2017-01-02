@@ -185,9 +185,15 @@ class ocaltest(unittest.TestCase):
 
     def test_ocal_repr(self):
         o = ocal.julian(2015, 12, 25)
+        rp = repr(o)
+        exp = "ocal.ocal.julian(2015, 12, 25)"
+        self.assertEqual(rp, exp,
+                         "repr failure. Expected '{}', got '{}'"
+                         .format(exp, rp))
+
         o.calendar = ocal.GREGORIAN
         rp = repr(o)
-        exp = "ocal.gregorian(2016, 1, 7)"
+        exp = "ocal.ocal.gregorian(2016, 1, 7)"
         self.assertEqual(rp, exp,
                          "repr failure. Expected '{}', got '{}'"
                          .format(exp, rp))
