@@ -212,11 +212,6 @@ class test_fixed(unittest.TestCase):
 
 
 class test_epistle(unittest.TestCase):
-    def setUp(self):
-        self.pascha_ep = episgos.epistle(date=ocal.pascha(2016).date)
-        self.triod_ep = episgos.epistle(date=ocal.pascha(2016).date-70)
-        self.pentecost_ep = episgos.epistle(date=ocal.pascha(2016).date+49)
-
     def test_ep_get_area_week(self):
         def chk(d, area, off):
             # This little step allows me to use 'pentecost - 1'

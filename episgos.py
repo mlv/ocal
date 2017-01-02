@@ -115,6 +115,7 @@ class fixed(ocal.ocal):
             fixeds.append(fixedict[self.jmonth][self.jday])
 
         for m, k in befafts:
+            fixeddict[m][k]['p'] = 1
             fixeds.append(fixedict[m][k])
 
         return fixeds

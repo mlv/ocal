@@ -855,3 +855,35 @@ weeks to need insertion of 16W. So, the dailies go until (and including)
 the 33W, then insert from 10-16W as needed before Sunday of Publican
 and Pharisee.
 
+** Mon Jan 02 09:01:18 EST 2017 progress, real progress
+
+Okay, I have Epistle under my belt (time to let it out a notch).
+Gospel shouldn't be too hard. It's harder than epistle, but I've 
+already done the heavy lifting, and know how to do everything.
+Well.... almost everything. I need a way to clarify, in both 
+epistle and gospel.fixed, that some fixed readings are more fixed 
+than others. You might not skip the movable epistle if the fixed 
+one is just to some non-vigil saint. But if the fixed is the Sunday 
+before Nativity, then you would skip the movable. This is something 
+I didn't add in epistle and should have. I also didn't add the mechanics 
+for feasts of the Master, Theotokos, or vigil rank saints whereby the 
+movable readings for those days are read on the next feasible day 
+(to be fair, the sample documents I have don't show that practice either).
+For the moment, I'll leave that out.
+
+So, for the time being, I'll set a 'p' dictionary entry for the days 
+that have a priority. For now, the befafts (which all automatically 
+have a priority) are set to 1. I'll also add to gospel.py (oh, have 
+to do it in epistle.py too...) 'p': 2 for feasts of our Master, 'p':3 
+for feasts of the Theotokos, and 'p':4 for feasts of vigil level saints.
+
+Adding them to epistle.py... odd, no prescribed epistle for the Nativity 
+of the Forerunner. Leaving it blank.
+
+Checked the Epistle.txt, it is there, but for some reason, the script 
+didn't pick it up. Added it by hand. I should probably keep track of 
+all the changes made to epistle.py and gospel.py (especially the ones 
+that change actual content).
+
+Oh, this is bad. I'm not tracking epistle.py or gospel.py in git.
+Time to rectify that (and make a note of all the changes made so far).
