@@ -504,8 +504,8 @@ fixed = [
              'St Gregory of Nyssa': {'L': 'Matthew (4:25-5:12)'}},
         11: {'Afterfeast of Theophany': {'L': ('Luke 4:1-15', '')},
              'St Theodosius the Cenobiarch': {'L': 'Matthew (11:27-30)'}},
-        12: {'Theophany Afterfeast': {'L': 'John (10:39-42)'}},
-        13: {'Theophany Afterfeast': {'L': ('Luke 20:1-8', '')}},
+        12: {'Afterfeast of Theophany': {'L': 'John (10:39-42)'}},
+        13: {'Afterfeast of Theophany': {'L': ('Luke 20:1-8', '')}},
         14: {'Holy Fathers slain at Sinai & Raitho':
              {'L': ('Luke 12:32-40', '')}},
         15: {'Ss. Paul of Thebes & John the Hut-dweller':
@@ -517,7 +517,8 @@ fixed = [
         },
         18: {'Ss. Athanasius & Cyril': {'L': 'Matthew (5:14-19)',
                                         'M': 'John (10:9-16)'}},
-        19: {'St. Mark of Ephesus': {'L': 'John (10:9-16)', 'M': 'John (10:1-9)'}},
+        19: {'St. Mark of Ephesus': {'L': 'John (10:9-16)',
+                                     'M': 'John (10:1-9)'}},
         20: {'p': 4,
              'St Euthymius the Great': {'L': 'Luke (6:17-23)',
                                         'M': 'Matthew (11:27-30)'}},
