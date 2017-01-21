@@ -887,3 +887,29 @@ that change actual content).
 
 Oh, this is bad. I'm not tracking epistle.py or gospel.py in git.
 Time to rectify that (and make a note of all the changes made so far).
+
+Okay, did that. epistle and gospel are in git, one big honkin' delta.
+
+** Mon Jan 02 16:35:48 EST 2017 minor details
+
+I never added unit tests for get_movable_epistle and get_fixed_epistle.
+Granted, they're both one-liners...
+
+** Mon Jan 16 07:59:18 EST 2017 Down to the wire
+(meaning, I want to get this done before the afterfeasts of Theophany)
+
+There are 16 weeks and a day between Exaltation of the Cross and Theophany.
+Oddly enough, the hardest time I'm dealing with now are what to do, in a
+movable context, with the Sundays in early January. It's odd, because they're 
+absolutely never used. They're all the Sunday before or after Nativity or 
+Theophany.
+
+I'm going to break with tradition and just set area to Luke and week to None
+if we're past the fall leaping and not past Theophany. That means that 
+simple get_gospel_reading() is going to have to check teh week against None.
+
+** Mon Jan 16 09:15:26 EST 2017 Hey, it worked. What happened??
+
+Okay, I've passed the unit test for get_area_week(). Does that mean it all 
+works now and I can go play Minecraft? Not quite. Added the Jan 7/20 2010 fix.
+

@@ -164,22 +164,23 @@ class test_fixed(unittest.TestCase):
         self.fixd = [
             None,
             {
-                1: 'oneret',
-                '6.-1.0': 'SBTh',
+                1: {'oneret':1},
+                '6.-1.0': {'L':'SBTh'},
             },
             {}, {}, {}, {}, {},
             {}, {}, {}, {}, {},
             {
-                12: 'stherman',
-                '25.-2.0': '2SunBN',
-                '30.1.6': 'SatA30',
+                12: {'L':'stherman'},
+                '25.-2.0': {'L':'2SunBN'},
+                '30.1.6': {'L':'SatA30'},
             },
         ]
 
     def test_get_fixed_normal(self):
         d = episgos.fixed(date=j(2012, 12, 12).date)
         ret = d.get_fixed(self.fixd)
-        self.assertEqual(ret, ['stherman'], "normal, didn't get St. Herman. Got {}"
+        self.assertEqual(ret, [{'L': 'stherman'}],
+                         "normal, didn't get St. Herman. Got {}"
                          .format(ret))
         d += 1
         ret = d.get_fixed(self.fixd)
@@ -187,23 +188,25 @@ class test_fixed(unittest.TestCase):
 
     def test_get_fixed_befaft(self):
         sth = episgos.fixed(date=j(2016, 12, 12).date)
+        # print("sth:{} ({})".format(sth, sth.dow))
         
         fxd = sth.get_fixed(self.fixd)
 
-        self.assertIn('2SunBN', fxd, "Missing 2SunBN. Got {} for {}"
+        self.assertIn({'p': 1, 'L': '2SunBN'}, fxd, "Missing 2SunBN. Got {} for {}"
                       .format(fxd, sth))
-        self.assertIn('stherman', fxd, "Missing stherman")
+        self.assertIn({'L':'stherman'}, fxd, "Missing stherman got {}".format(fxd))
         self.assertEqual(len(fxd), 2,
                          "fxd {}, expected just 2SunBN and stherman"
                          .format(fxd))
 
         d30 = episgos.fixed(date=j(2015, 1, 4).date)
         fxd = d30.get_fixed(self.fixd)
-        self.assertEqual(fxd, ['SatA30'], "Missing SatA30, got {}".format(fxd))
+        self.assertEqual(fxd, [{'p':1, 'L': 'SatA30'}],
+                         "Missing SatA30, got {}".format(fxd))
 
         prevyr = episgos.fixed(date=j(2001, 12, 31).date)
         ret = prevyr.get_fixed(self.fixd)
-        self.assertEqual(ret, ['SBTh'], 'Got {} expected SBTh'.format(ret))
+        self.assertEqual(ret, [{'p': 1, 'L': 'SBTh'}], 'Got {} expected SBTh'.format(ret))
         
         missing = episgos.fixed(date=j(2014, 4, 1).date)
         ret = missing.get_fixed(self.fixd)
@@ -228,7 +231,7 @@ class test_epistle(unittest.TestCase):
         # Easy ones
         pascha = ocal.pascha(2016)
 
-        # chk(pascha, "pascha", 0)
+        chk(pascha, "pascha", 1)
         chk(pascha+1, "pascha", 1)
         chk(pascha+6, "pascha", 1)
         chk(pascha+8, "pascha", 2)
@@ -284,7 +287,7 @@ class test_epistle(unittest.TestCase):
 
         pentecost = pascha + 49
         chk(pentecost - 1, "pascha", 7)
-        chk(pentecost, "pascha", 7)
+        chk(pentecost, "pascha", 8)
         chk(pentecost + 1, "pentecost", 1)
 
         chk(pentecost + 6, "pentecost", 1)
@@ -306,35 +309,121 @@ class test_epistle(unittest.TestCase):
         chk(j(2014, 1, 10), 'pentecost', 31)
         chk(j(2017, 1, 20), 'pentecost', 33)
 
-r'''
-class xtest_gospel(unittest.TestCase):
-    def test_get_areaoff(self):
+
+class test_gospel(unittest.TestCase):
+    def test_gos_get_area_week(self):
         """Test the Gospel get_area_off method.
         Reminder: it handles Lukan jump
-        but not all the following oddities"""
-        def chk(d, area, off):
-            tup = (area, off)
+        and all the following oddities"""
+
+        def chk(d, area, week):
             # This little step allows me to use 'pentecost - 1'
             # (which retuns an ocal, not a movable)
-            ed = episgos.gospel(date=d.date)
-            areaoff = ed.get_area_off()
-            self.assertEqual(areaoff, tup, "Expected {} got {}"
-                             .format(tup, areaoff))
+            gd = episgos.gospel(date=d.date)
+            # And this little step saves me a pair of parens
+            areaweek = (area, week)
+            gd.get_area_week()
+            
+            self.assertEqual((gd.g_area, gd.g_week), areaweek,
+                             "For {} Expected {} got {} (o:{})"
+                             .format(gd, areaweek,
+                                     (gd.g_area, gd.g_week),
+                                     gd.p_offset))
                             
         # Easy ones
         pascha = ocal.pascha(2016)
         
-        chk(pascha, "pascha", 0)
+        chk(pascha,   "pascha", 1)
+        chk(pascha+1, "pascha", 1)
+        chk(pascha+7, "pascha", 2)
+        chk(pascha+8, "pascha", 2)
 
         chk(pascha - 1, "lent", 7)
         lent = pascha - 49
         
-        chk(lent,    "lent", 0)
-        chk(lent+1,  "lent", 0)
-        chk(lent+13, "lent", 1)
+        chk(lent,    "Luke", 19)  # Gospel has no lent,0
+        chk(lent+1,  "lent", 1)
+        chk(lent+7,  "lent", 1)
+        chk(lent+8,  "lent", 2)
         chk(lent+14, "lent", 2)
-        chk(lent+15, "lent", 2)
 
-'''    
+        matt = pascha + 49
+        chk(matt,    "pascha", 8)  # No 0 for Matt. Pentecost is pascha 8
+
+        # Try some random sampled weekdays
+        chk(j(2016, 5, 31), "pascha", 7)
+        chk(j(2016, 6,  7), "Matthew",  1)
+        chk(j(2016, 7, 10), "Matthew",  5)
+        chk(j(2016, 8, 11), "Matthew", 10)
+        chk(j(2016, 9, 17), "Matthew", 15)
+
+        chk(j(2017,  1, 19), "Matthew", 16)
+
+        chk(j(2016,  9, 20), "Luke",  1)
+        chk(j(2016, 10, 15), "Luke",  4)
+        chk(j(2016, 11, 22), "Luke", 10)
+        chk(j(2016, 12, 20), "Luke", 14)
+        chk(j(2017,  1,  4), "Luke", 16)
+        chk(j(2017,  2,  4), "Luke", 18)
+        chk(j(2017,  2,  7), "Luke", 19)
+        chk(j(2017,  3, 12), "lent",  4)
+        chk(j(2017,  3, 26), "lent",  6)
+        chk(j(2017,  3, 29), "lent",  7)
+
+        chk(j(2017,  6,  6), "Matthew", 3)
+        chk(j(2017,  6, 28), "Matthew", 6)
+        chk(j(2017,  7,  7), "Matthew", 7)
+
+        # Now some Sundays
+        chk(j(2016, 5, 2), "pascha", 3)
+        chk(j(2016, 6, 6), "pascha", 8)
+        chk(j(2016,  9,  5), "Matthew", 13)
+        lukj = j(2016, 10,  3)
+        for w in [2, 3, 4, 6, 5, 7, 8, 9, 13, 10, 11]:
+            chk(lukj, "Luke",  w)
+            lukj += 7
+        self.assertEqual(lukj, j(2016, 12, 19),
+                         "2016 Lukes don't line up. expected 12/19, got {}"
+                         .format(lukj))
+
+        chk(j(2017,  9,  4), "Matthew", 15)
+        lukj = j(2017,  9, 25)
+        for w in [1, 2, 3, 4, 6, 5, 7, 8, 9, 13, 10, 11]:
+            chk(lukj, "Luke",  w)
+            lukj += 7
+        # Make sure we didn't miscount
+        self.assertEqual(lukj, j(2017, 12, 18),
+                         "2017 Lukes don't line up. expected Dec 18, got {}"
+                         .format(lukj))
+
+        chk(j(2016,  1, 18), "Luke", 12)
+        chk(j(2016,  1, 25), "Luke", 15)
+        chk(j(2016,  2,  1), "Matthew", 17)
+        chk(j(2016,  2,  8), "Luke", 16)
+        chk(j(2016,  2, 15), "Luke", 17)
+        chk(j(2016,  2, 22), "Luke", 18)
+        chk(j(2016,  2, 29), "Luke", 19)
+
+        chk(j(2016,  4, 11), "lent",  6)
+        chk(j(2017,  1, 16), "Luke", 15)
+        chk(j(2017,  1, 23), "Luke", 16)
+        chk(j(2017,  1, 30), "Luke", 17)
+        chk(j(2017,  2,  6), "Luke", 18)
+        chk(j(2017,  2, 13), "Luke", 19)
+
+    def test_get_fixed_gospel(self):
+        g = episgos.gospel(date=j(2011, 1, 7).date)
+        gf = g.get_fixed_gospel()
+        self.assertEqual(len(gf), 1, "Got {} for {}".format(gf, g))
+        
+        g = episgos.gospel(date=j(2010, 1, 7).date)
+        gf = g.get_fixed_gospel()
+        self.assertEqual(len(gf), 2, "Got {} for {}".format(gf, g))
+
+    def test_get_week(self):
+        g = episgos.gospel(date=j(2016, 5, 9).date)
+        wk = g.get_week()
+        self.assertEqual(wk, "4th week of Pascha")
+
 if __name__ == "__main__":
     unittest.main(buffer=False)
