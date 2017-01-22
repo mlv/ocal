@@ -1,6 +1,9 @@
 import unittest
-
+import freezegun
 import ocal
+import time
+import os
+        
 
 
 class ocaltest(unittest.TestCase):
@@ -268,5 +271,55 @@ class ocalpascha(unittest.TestCase):
                              "Pascha failed for year {} ({} != {})"
                              .format(yd[0], o.get_date(), yd[1]))
 
+class test_time_today(unittest.TestCase):
+    def setUp(self):
+        self.sv = time.tzname, time.timezone, time.altzone
+        try:
+            self.tzsv = os.environ['TZ']
+        except KeyError:
+            self.tzsv = None
+        os.environ['TZ'] = 'UTC+0'
+        time.tzset()
+        self.assertEqual(time.timezone, 0)
+        
+    def tearDown(self):
+        time.tzname, time.timezone, time.altzone = self.sv
+        if self.tzsv is None:
+            del os.environ['TZ']
+        else:
+            os.environ['TZ'] = self.tzsv
+
+    def daytest(self, g, (y, m, d)):
+        self.assertEqual(g.calendar, ocal.GREGORIAN, "wrong calendar")
+        self.assertEqual(g.year,  y, "returned {} not {}".format(g.year, y))
+        self.assertEqual(g.month, m, "returned {} not {}".format(g.month, m))
+        self.assertEqual(g.day,   d, "returned {} not {}".format(g.day, d))
+        
+    @freezegun.freeze_time('2010-02-18 10:59:45')
+    def test_today_1(self):
+        "Test various permutations of today, using freeze_time"
+        
+        # first, no midnight
+        g = ocal.today()
+        self.daytest(g, (2010, 2, 18))
+
+        g = ocal.today(midnight=11)
+        self.daytest(g, (2010, 2, 18))
+
+        g = ocal.today(midnight=10)
+        self.daytest(g, (2010, 2, 19))
+
+    @freezegun.freeze_time('2013-07-01 18:00:01')
+    def test_today_2(self):
+        # first, no midnight
+        g = ocal.today()
+        self.daytest(g, (2013, 7, 1))
+
+        g = ocal.today(midnight=19)
+        self.daytest(g, (2013, 7, 1))
+
+        g = ocal.today(midnight=18)
+        self.daytest(g, (2013, 7, 2))
+        
 if __name__ == "__main__":
     unittest.main()

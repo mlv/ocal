@@ -5,6 +5,7 @@ import jdcal
 GREGORIAN = 1
 JULIAN = 2
 
+dows = ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')
 
 class ocal(object):
     """
@@ -48,6 +49,19 @@ modified julian date. I'll just always pass that + jdcal.MJD_0.
     def mj_date(cls, date):
         "Create an ocal instance with date as a modified julian date."
         return cls(date=date)
+
+    @classmethod
+    def today(cls, midnight=24):
+        """Return today. If midnight is set to something other than 24 (eg 18),
+        hours after that are considered the next day"""
+        import time
+        t = time.time()
+        lt = time.localtime(t)
+    
+        if lt.tm_hour >= midnight:
+            t += 86400
+            lt = time.localtime(t)
+        return cls(year=lt.tm_year, month=lt.tm_mon, day=lt.tm_mday)
 
     def __init__(self, **kw):
         """Initialize.
@@ -222,6 +236,9 @@ def gregorian(*a, **k):
 def julian(*a, **k):
     return ocal.julian(*a, **k)
 
+
+def today(*a, **k):
+    return ocal.today(*a, **k)
 
 # paschacache = {}
 
